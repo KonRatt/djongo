@@ -187,10 +187,10 @@ class LikeOp:
         if isinstance(self.to_match, str):
             unescaped_wildcard = re.compile(r'(?:^|[^\\])(?:\\\\)*%')
             non_wildcard_parts = re.split(unescaped_wildcard, self.to_match)
-            regex_escaped_parts = map(
-                lambda part: re.escape(re.sub(r'\\(.)', '\1', part)),
-                non_wildcard_parts,
-            )
+            regex_escaped_parts = [
+                re.escape(re.sub(r'\\(.)', '\1', part))
+                for part in non_wildcard_parts
+            ]
 
             if regex_escaped_parts[0] == '':
                 del regex_escaped_parts[0]
