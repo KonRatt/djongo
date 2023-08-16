@@ -185,24 +185,24 @@ class LikeOp:
 
     def make_regex(self):
         if isinstance(self.to_match, str):
-            unescaped_wildcard = re.compile(r"(?:^|[^\\])(?:\\\\)*%")
+            unescaped_wildcard = re.compile(r'(?:^|[^\\])(?:\\\\)*%')
             non_wildcard_parts = re.split(unescaped_wildcard, self.to_match)
             regex_escaped_parts = map(
-                lambda part: re.escape(re.sub(r"\\(.)", "\1", part)),
+                lambda part: re.escape(re.sub(r'\\(.)', '\1', part)),
                 non_wildcard_parts,
             )
 
-            if regex_escaped_parts[0] == "":
+            if regex_escaped_parts[0] == '':
                 del regex_escaped_parts[0]
             else:
                 regex_escaped_parts[0] = '^' + regex_escaped_parts[0]
 
-            if regex_escaped_parts[-1] == "":
+            if regex_escaped_parts[-1] == '':
                 del regex_escaped_parts[-1]
             else:
-                regex_escaped_parts[-1] += "$"
+                regex_escaped_parts[-1] += '$'
 
-            regex = r"[\s\S]*".join(regex_escaped_parts)
+            regex = r'[\s\S]*'.join(regex_escaped_parts)
         elif isinstance(self.to_match, dict):
             regex = self.to_match
             field_ext, self.to_match = next(iter(self.to_match.items()))
