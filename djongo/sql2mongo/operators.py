@@ -5,7 +5,6 @@ import typing
 import json
 from itertools import chain
 
-import bson.regex
 from sqlparse import tokens
 from sqlparse.sql import Token, Parenthesis, Comparison, IdentifierList, Identifier
 
@@ -186,8 +185,24 @@ class LikeOp:
 
     def make_regex(self):
         if isinstance(self.to_match, str):
-            to_match = self.to_match.replace('%', '.*')
-            regex = '^' + to_match + '$'
+            unescaped_wildcard = re.compile(r"(?:^|[^\\])(?:\\\\)*%")
+            non_wildcard_parts = re.split(unescaped_wildcard, self.to_match)
+            regex_escaped_parts = map(
+                lambda part: re.escape(re.sub(r"\\(.)", "\1", part)),
+                non_wildcard_parts,
+            )
+
+            if regex_escaped_parts[0] == "":
+                del regex_escaped_parts[0]
+            else:
+                regex_escaped_parts[0] = '^' + regex_escaped_parts[0]
+
+            if regex_escaped_parts[-1] == "":
+                del regex_escaped_parts[-1]
+            else:
+                regex_escaped_parts[-1] += "$"
+
+            regex = r"[\s\S]*".join(regex_escaped_parts)
         elif isinstance(self.to_match, dict):
             regex = self.to_match
             field_ext, self.to_match = next(iter(self.to_match.items()))
@@ -547,15 +562,11 @@ class CmpOp(_Op):
         if not self.is_negated:
             mongo = {field: {self._operator: self._constant}}
             if self._sql_operator == 'iLIKE':
-                mongo[field]['$options'] = 'im'
+                mongo[field]['$options'] = 'i'
         else:
-            if self._sql_operator in LIKE_OPERATOR_MAP:
-                regex = bson.regex.Regex(self._constant, 'i')
-                if self._sql_operator == 'iLIKE':
-                    regex = bson.regex.Regex(self._constant, 'i')
-                mongo = {field: {'$not': regex}}
-            else:
-                mongo = {field: {'$not': {self._operator: self._constant}}}
+            mongo = {field: {'$not': {self._operator: self._constant}}}
+            if self._sql_operator == 'iLIKE':
+                mongo[field]['$not']['$options'] = 'i'
 
         return mongo
 
