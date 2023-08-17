@@ -185,24 +185,21 @@ class LikeOp:
 
     def make_regex(self):
         if isinstance(self.to_match, str):
-            unescaped_wildcard = re.compile(r'(?:^|[^\\])(?:\\\\)*%')
-            non_wildcard_parts = re.split(unescaped_wildcard, self.to_match)
-            regex_escaped_parts = [
-                re.escape(re.sub(r'\\(.)', '\1', part))
-                for part in non_wildcard_parts
-            ]
-
-            if regex_escaped_parts[0] == '':
-                del regex_escaped_parts[0]
+            # Django only creates wildcards (%) at the start or end. This
+            # matches everything in between and takes care of escaping.
+            match = re.search(r'(?:\\.|[^\\%_])+', self.to_match)
+            regex = ''
+            if match is None:
+                if self.to_match == "":
+                    regex = '^$'
             else:
-                regex_escaped_parts[0] = '^' + regex_escaped_parts[0]
+                if match.start() == 0:
+                    regex = '^'
+                regex += re.escape(re.sub(r'\\(.)', r'\1', match.group(0)))
+                if match.end() == len(self.to_match):
+                    regex += '$'
 
-            if regex_escaped_parts[-1] == '':
-                del regex_escaped_parts[-1]
-            else:
-                regex_escaped_parts[-1] += '$'
-
-            regex = r'[\s\S]*'.join(regex_escaped_parts)
+            return regex
         elif isinstance(self.to_match, dict):
             regex = self.to_match
             field_ext, self.to_match = next(iter(self.to_match.items()))
