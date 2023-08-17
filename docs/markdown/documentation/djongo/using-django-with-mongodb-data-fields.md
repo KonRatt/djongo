@@ -197,7 +197,7 @@ Internally Djongo converts this query (for BlogPost collection) to the form:
 ```python
 filter = {
     'blog.name': {
-        '$regex': '^Beatles.*$'
+        '$regex': '^Beatles'
     }
 }
 ```
@@ -211,7 +211,7 @@ Internally Djongo converts this query (for BlogPost collection) to the form:
 ```python
 filter = {
     'blog.tagline.subtitle': {
-            '$regex': '^Artist.*$'
+        '$regex': '^Artist'
     }
 }
 ```
